@@ -63,12 +63,20 @@ struct ShaderCode {
         false, M, N, 8, X, Y, DataType::fp32, DataType::fp32          \
   }
 
-#define SHADER_TILE_COOP_F32(M, N, K, X, Y)                              \
-  ShaderCode {                                                           \
-    "CoopTile[" #M "x" #N "x" #K "]",                                    \
-        matmul_coop_f32::                                                \
-            TILE_M_##M##_TILE_N_##N##_TILE_K_##K##_WG_X_##X##_WG_Y_##Y,  \
-        false, M, N, K, X, Y, DataType::fp32, DataType::fp32             \
+#define SHADER_TILE_COOP_F32(M, N, K, X, Y)                                \
+  ShaderCode {                                                             \
+    "CoopTile[" #M "x" #N "x" #K "]/WGX=" #X,                              \
+        matmul_coop_f32::                                                  \
+            TILE_M_##M##_TILE_N_##N##_TILE_K_##K##_WG_X_##X##_WG_Y_##Y,    \
+        false, M, (N * (X / 16)), K, X, Y, DataType::fp32, DataType::fp32  \
+  }
+
+#define SHADER_TILE_COOP_DIRECT_F32(M, N, K, X, Y)                         \
+  ShaderCode {                                                             \
+    "CoopDirect[" #M "x" #N "x" #K "]/WGX=" #X,                            \
+        matmul_coop_direct_f32::                                           \
+            TILE_M_##M##_TILE_N_##N##_TILE_K_##K##_WG_X_##X##_WG_Y_##Y,    \
+        false, M, N, K, X, Y, DataType::fp32, DataType::fp32  \
   }
 
 #define SHADER_TILE_F16_TEX(M, N, K, T, X, Y)                                         \
@@ -161,6 +169,9 @@ namespace matmul_shared_f32 {
 namespace matmul_coop_f32 {
 #include "matmul_coopmat_shader_f32_adreno_spirv_permutation.inc"
 }
+namespace matmul_coop_direct_f32 {
+#include "matmul_coopmat_direct_shader_f32_adreno_spirv_permutation.inc"
+}
 namespace matmul_tiled_f16 {
 #include "matmul_tiled_shader_f16_adreno_spirv_permutation.inc"
 }
@@ -186,6 +197,18 @@ static ShaderCode kShaderCodeCases[] = {
     WORKGROUP_TILE_N_SHARED_F32(32, 2, 256),
     WORKGROUP_TILE_N_SHARED_F32(32, 4, 256),
     SHADER_TILE_COOP_F32(16, 16, 16, 16, 1),
+    SHADER_TILE_COOP_F32(16, 16, 16, 32, 1),
+    SHADER_TILE_COOP_F32(16, 16, 16, 64, 1),
+    SHADER_TILE_COOP_DIRECT_F32(16, 16, 4, 16, 1),   SHADER_TILE_COOP_DIRECT_F32(16, 32, 4, 16, 1),
+    SHADER_TILE_COOP_DIRECT_F32(32, 16, 4, 16, 1),   SHADER_TILE_COOP_DIRECT_F32(32, 32, 4, 16, 1),
+    SHADER_TILE_COOP_DIRECT_F32(16, 16, 16, 16, 1),   SHADER_TILE_COOP_DIRECT_F32(16, 32, 16, 16, 1),
+    SHADER_TILE_COOP_DIRECT_F32(16, 64, 16, 16, 1),   SHADER_TILE_COOP_DIRECT_F32(16, 128, 16, 16, 1),
+    SHADER_TILE_COOP_DIRECT_F32(32, 16, 16, 16, 1),   SHADER_TILE_COOP_DIRECT_F32(32, 32, 16, 16, 1),
+    SHADER_TILE_COOP_DIRECT_F32(32, 64, 16, 16, 1),   SHADER_TILE_COOP_DIRECT_F32(32, 128, 16, 16, 1),
+    SHADER_TILE_COOP_DIRECT_F32(64, 16, 16, 16, 1),   SHADER_TILE_COOP_DIRECT_F32(64, 32, 16, 16, 1),
+    SHADER_TILE_COOP_DIRECT_F32(64, 64, 16, 16, 1),   SHADER_TILE_COOP_DIRECT_F32(64, 128, 16, 16, 1),
+    SHADER_TILE_COOP_DIRECT_F32(128, 16, 16, 16, 1),   SHADER_TILE_COOP_DIRECT_F32(128, 32, 16, 16, 1),
+    SHADER_TILE_COOP_DIRECT_F32(128, 64, 16, 16, 1),   SHADER_TILE_COOP_DIRECT_F32(128, 128, 16, 16, 1),
     WORKGROUP_TILE_N_F16(32, 2, 128),
     WORKGROUP_TILE_N_F16(32, 2, 256),
     WORKGROUP_TILE_N_I32(32, 2, 128),
@@ -207,6 +230,9 @@ namespace matmul_shared_f32 {
 namespace matmul_coop_f32 {
 #include "matmul_coopmat_shader_f32_valhall_spirv_permutation.inc"
 }
+namespace matmul_coop_direct_f32 {
+#include "matmul_coopmat_direct_shader_f32_valhall_spirv_permutation.inc"
+}
 namespace matmul_tiled_f16 {
 #include "matmul_tiled_shader_f16_valhall_spirv_permutation.inc"
 }
@@ -226,6 +252,18 @@ static ShaderCode kShaderCodeCases[] = {
     WORKGROUP_TILE_N_SHARED_F32(16, 2, 64),   WORKGROUP_TILE_N_SHARED_F32(16, 2, 128),
     WORKGROUP_TILE_N_SHARED_F32(16, 4, 64),   WORKGROUP_TILE_N_SHARED_F32(16, 4, 128),
     SHADER_TILE_COOP_F32(16, 16, 16, 16, 1),
+    SHADER_TILE_COOP_F32(16, 16, 16, 32, 1),
+    SHADER_TILE_COOP_F32(16, 16, 16, 64, 1),
+    SHADER_TILE_COOP_DIRECT_F32(16, 16, 4, 16, 1),   SHADER_TILE_COOP_DIRECT_F32(16, 32, 4, 16, 1),
+    SHADER_TILE_COOP_DIRECT_F32(32, 16, 4, 16, 1),   SHADER_TILE_COOP_DIRECT_F32(32, 32, 4, 16, 1),
+    SHADER_TILE_COOP_DIRECT_F32(16, 16, 16, 16, 1),   SHADER_TILE_COOP_DIRECT_F32(16, 32, 16, 16, 1),
+    SHADER_TILE_COOP_DIRECT_F32(16, 64, 16, 16, 1),   SHADER_TILE_COOP_DIRECT_F32(16, 128, 16, 16, 1),
+    SHADER_TILE_COOP_DIRECT_F32(32, 16, 16, 16, 1),   SHADER_TILE_COOP_DIRECT_F32(32, 32, 16, 16, 1),
+    SHADER_TILE_COOP_DIRECT_F32(32, 64, 16, 16, 1),   SHADER_TILE_COOP_DIRECT_F32(32, 128, 16, 16, 1),
+    SHADER_TILE_COOP_DIRECT_F32(64, 16, 16, 16, 1),   SHADER_TILE_COOP_DIRECT_F32(64, 32, 16, 16, 1),
+    SHADER_TILE_COOP_DIRECT_F32(64, 64, 16, 16, 1),   SHADER_TILE_COOP_DIRECT_F32(64, 128, 16, 16, 1),
+    SHADER_TILE_COOP_DIRECT_F32(128, 16, 16, 16, 1),   SHADER_TILE_COOP_DIRECT_F32(128, 32, 16, 16, 1),
+    SHADER_TILE_COOP_DIRECT_F32(128, 64, 16, 16, 1),   SHADER_TILE_COOP_DIRECT_F32(128, 128, 16, 16, 1),
     WORKGROUP_TILE_N_F16(8, 2, 64),           WORKGROUP_TILE_N_F16(8, 2, 128),
     WORKGROUP_TILE_N_I32(16, 1, 64),          WORKGROUP_TILE_N_I32(16, 1, 128),
     WORKGROUP_TILE_N_I8_INNERPROD(16, 1, 64), WORKGROUP_TILE_N_I8(16, 1, 64),

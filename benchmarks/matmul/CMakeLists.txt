@@ -65,7 +65,20 @@ uvkc_glsl_shader_permutation(
     "TILE_M=[16]"
     "TILE_N=[16]"
     "TILE_K=[16]"
-    "WG_X=16"
+    "WG_X=[16|32|64]"
+    "WG_Y=1"
+)
+
+uvkc_glsl_shader_permutation(
+  NAME
+    matmul_coopmat_direct_shader_f32_adreno
+  SRC
+    "matmul_coopmat_direct_fp32.glsl"
+  PERMUTATION
+    "TILE_M=[16|32|64|128]"
+    "TILE_N=[16|32|64|128]"
+    "TILE_K=[4|16]"
+    "WG_X=[16]"
     "WG_Y=1"
 )
 
@@ -118,6 +131,7 @@ uvkc_cc_binary(
     ::matmul_tiled_shader_f32_adreno
     ::matmul_sharedmem_shader_f32_adreno
     ::matmul_coopmat_shader_f32_adreno
+    ::matmul_coopmat_direct_shader_f32_adreno
     ::matmul_tiled_shader_i32_adreno
     ::matmul_tiled_shader_i8_adreno
     ::matmul_tiled_shader_i8_innerproduct_adreno
@@ -181,7 +195,20 @@ uvkc_glsl_shader_permutation(
     "TILE_M=[16]"
     "TILE_N=[16]"
     "TILE_K=[16]"
-    "WG_X=16"
+    "WG_X=[16|32|64]"
+    "WG_Y=1"
+)
+
+uvkc_glsl_shader_permutation(
+  NAME
+    matmul_coopmat_direct_shader_f32_valhall
+  SRC
+    "matmul_coopmat_direct_fp32.glsl"
+  PERMUTATION
+    "TILE_M=[16|32|64|128]"
+    "TILE_N=[16|32|64|128]"
+    "TILE_K=[4|16]"
+    "WG_X=[16]"
     "WG_Y=1"
 )
 
@@ -234,6 +261,7 @@ uvkc_cc_binary(
     ::matmul_tiled_shader_f32_valhall
     ::matmul_sharedmem_shader_f32_valhall
     ::matmul_coopmat_shader_f32_valhall
+    ::matmul_coopmat_direct_shader_f32_valhall
     ::matmul_tiled_shader_i32_valhall
     ::matmul_tiled_shader_i8_valhall
     ::matmul_tiled_shader_i8_innerproduct_valhall
