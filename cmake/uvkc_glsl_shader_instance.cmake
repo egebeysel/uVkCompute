@@ -39,6 +39,17 @@ function(uvkc_glsl_shader_instance)
     ${ARGN}
   )
 
+  # Force a modern Vulkan/SPIR-V target for all shaders
+  if (NOT DEFINED UVKC_GLSLC_DEFAULT_ARGS)
+    set(UVKC_GLSLC_DEFAULT_ARGS "--target-env=vulkan1.3" CACHE STRING
+        "Extra default arguments passed to glslc by uvkc")
+  endif()
+
+  if (UVKC_GLSLC_DEFAULT_ARGS)
+    list(APPEND _RULE_GLSLC_ARGS ${UVKC_GLSLC_DEFAULT_ARGS})
+  endif()
+
+
   uvkc_package_ns(_PACKAGE_NS)
 
   # Prefix the library with the package name
