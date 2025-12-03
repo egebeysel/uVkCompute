@@ -56,6 +56,21 @@ struct ShaderCode {
         false, M, N, K, X, Y, DataType::fp32, DataType::fp32            \
   }
 
+#define SHADER_TILE_SHARED_F32(M, N, X, Y)                            \
+  ShaderCode {                                                        \
+    "SharedTile[" #M "x" #N "x8]",                                    \
+        matmul_shared_f32::TILE_M_##M##_TILE_N_##N##_TILE_K_8_WG_X_##X##_WG_Y_##Y, \
+        false, M, N, 8, X, Y, DataType::fp32, DataType::fp32          \
+  }
+
+#define SHADER_TILE_COOP_F32(M, N, K, X, Y)                              \
+  ShaderCode {                                                           \
+    "CoopTile[" #M "x" #N "x" #K "]",                                    \
+        matmul_coop_f32::                                                \
+            TILE_M_##M##_TILE_N_##N##_TILE_K_##K##_WG_X_##X##_WG_Y_##Y,  \
+        false, M, N, K, X, Y, DataType::fp32, DataType::fp32             \
+  }
+
 #define SHADER_TILE_F16_TEX(M, N, K, T, X, Y)                                         \
   ShaderCode {                                                                        \
     "Tile[" #M "x" #N "x" #K "]/Texture=" #T,                                         \
@@ -106,6 +121,9 @@ struct ShaderCode {
       SHADER_TILE_F32(4, N, 8, X, Y), SHADER_TILE_F32(8, N, 8, X, Y),  \
       SHADER_TILE_F32(16, N, 8, X, Y), SHADER_TILE_F32(32, N, 8, X, Y)
 
+#define WORKGROUP_TILE_N_SHARED_F32(X, Y, N) \
+  SHADER_TILE_SHARED_F32(8, N, X, Y), SHADER_TILE_SHARED_F32(16, N, X, Y), SHADER_TILE_SHARED_F32(32, N, X, Y)
+
 #define WORKGROUP_TILE_N_I32(X, Y, N)                                  \
   SHADER_TILE_I32(2, N, 4, X, Y), SHADER_TILE_I32(4, N, 4, X, Y),      \
       SHADER_TILE_I32(8, N, 4, X, Y), SHADER_TILE_I32(16, N, 4, X, Y), \
@@ -137,6 +155,12 @@ struct ShaderCode {
 namespace matmul_tiled_f32 {
 #include "matmul_tiled_shader_f32_adreno_spirv_permutation.inc"
 }
+namespace matmul_shared_f32 {
+#include "matmul_sharedmem_shader_f32_adreno_spirv_permutation.inc"
+}
+namespace matmul_coop_f32 {
+#include "matmul_coopmat_shader_f32_adreno_spirv_permutation.inc"
+}
 namespace matmul_tiled_f16 {
 #include "matmul_tiled_shader_f16_adreno_spirv_permutation.inc"
 }
@@ -153,6 +177,15 @@ namespace matmul_tiled_i8_innerproduct {
 static ShaderCode kShaderCodeCases[] = {
     WORKGROUP_TILE_N_F32(32, 2, 128),
     WORKGROUP_TILE_N_F32(32, 2, 256),
+    WORKGROUP_TILE_N_SHARED_F32(16, 2, 128),
+    WORKGROUP_TILE_N_SHARED_F32(16, 4, 128),
+    WORKGROUP_TILE_N_SHARED_F32(32, 2, 128),
+    WORKGROUP_TILE_N_SHARED_F32(32, 4, 128),
+    WORKGROUP_TILE_N_SHARED_F32(16, 2, 256),
+    WORKGROUP_TILE_N_SHARED_F32(16, 4, 256),
+    WORKGROUP_TILE_N_SHARED_F32(32, 2, 256),
+    WORKGROUP_TILE_N_SHARED_F32(32, 4, 256),
+    SHADER_TILE_COOP_F32(16, 16, 16, 16, 1),
     WORKGROUP_TILE_N_F16(32, 2, 128),
     WORKGROUP_TILE_N_F16(32, 2, 256),
     WORKGROUP_TILE_N_I32(32, 2, 128),
@@ -167,6 +200,12 @@ static ShaderCode kShaderCodeCases[] = {
 
 namespace matmul_tiled_f32 {
 #include "matmul_tiled_shader_f32_valhall_spirv_permutation.inc"
+}
+namespace matmul_shared_f32 {
+#include "matmul_sharedmem_shader_f32_valhall_spirv_permutation.inc"
+}
+namespace matmul_coop_f32 {
+#include "matmul_coopmat_shader_f32_valhall_spirv_permutation.inc"
 }
 namespace matmul_tiled_f16 {
 #include "matmul_tiled_shader_f16_valhall_spirv_permutation.inc"
@@ -183,6 +222,10 @@ namespace matmul_tiled_i8_innerproduct {
 
 static ShaderCode kShaderCodeCases[] = {
     WORKGROUP_TILE_N_F32(16, 1, 64),          WORKGROUP_TILE_N_F32(16, 1, 128),
+    WORKGROUP_TILE_N_SHARED_F32(16, 1, 64),   WORKGROUP_TILE_N_SHARED_F32(16, 1, 128),
+    WORKGROUP_TILE_N_SHARED_F32(16, 2, 64),   WORKGROUP_TILE_N_SHARED_F32(16, 2, 128),
+    WORKGROUP_TILE_N_SHARED_F32(16, 4, 64),   WORKGROUP_TILE_N_SHARED_F32(16, 4, 128),
+    SHADER_TILE_COOP_F32(16, 16, 16, 16, 1),
     WORKGROUP_TILE_N_F16(8, 2, 64),           WORKGROUP_TILE_N_F16(8, 2, 128),
     WORKGROUP_TILE_N_I32(16, 1, 64),          WORKGROUP_TILE_N_I32(16, 1, 128),
     WORKGROUP_TILE_N_I8_INNERPROD(16, 1, 64), WORKGROUP_TILE_N_I8(16, 1, 64),
