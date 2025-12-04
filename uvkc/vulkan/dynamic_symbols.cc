@@ -34,7 +34,10 @@ namespace vulkan {
 // Read-only table of function pointer information designed to be in .rdata.
 // To reduce binary size this structure is packed (knowing that we won't have
 // gigabytes of function pointers :).
-struct FunctionPtrInfo {
+// On Apple arm64 a packed struct places the next element on a 1-byte boundary,
+// which causes misaligned pointer relocations and the linker to fail. Keep the
+// default pointer alignment instead.
+struct alignas(alignof(void*)) FunctionPtrInfo {
   // Name of the function (like 'vkSomeFunction').
   const char *function_name;
   // 1 if the function pointer can be resolved via vkGetDeviceProcAddr.
@@ -44,7 +47,11 @@ struct FunctionPtrInfo {
   // An offset in bytes from the base of &syms to where the PFN_vkSomeFunction
   // member is located.
   uint32_t member_offset : 30;
-} ABSL_ATTRIBUTE_PACKED;
+};
+static_assert(alignof(FunctionPtrInfo) >= alignof(void *),
+              "FunctionPtrInfo must keep pointer alignment");
+static_assert(sizeof(FunctionPtrInfo) % alignof(FunctionPtrInfo) == 0,
+              "FunctionPtrInfo size must respect its alignment");
 
 namespace {
 

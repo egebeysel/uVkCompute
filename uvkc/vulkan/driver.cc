@@ -78,15 +78,25 @@ absl::StatusOr<std::unique_ptr<Driver>> Driver::Create(
     const char *app_name, DynamicSymbols *symbols) {
   auto app_info = GetDefaultApplicationInfo(app_name);
 
+  std::vector<const char *> instance_extensions;
+#if defined(UVKC_PLATFORM_MACOS) && defined(VK_KHR_portability_enumeration)
+  // MoltenVK requires the portability enumeration extension and flag.
+  instance_extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+#endif
+
   VkInstanceCreateInfo create_info = {};
   create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
   create_info.pNext = nullptr;
   create_info.flags = 0;
+#if defined(UVKC_PLATFORM_MACOS) && defined(VK_KHR_portability_enumeration)
+  create_info.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+#endif
   create_info.pApplicationInfo = &app_info;
   create_info.enabledLayerCount = 0;
-  create_info.ppEnabledExtensionNames = nullptr;
-  create_info.enabledExtensionCount = 0;
-  create_info.ppEnabledExtensionNames = nullptr;
+  create_info.enabledExtensionCount =
+      static_cast<uint32_t>(instance_extensions.size());
+  create_info.ppEnabledExtensionNames =
+      instance_extensions.empty() ? nullptr : instance_extensions.data();
 
   VkInstance instance = VK_NULL_HANDLE;
   VK_RETURN_IF_ERROR(symbols->vkCreateInstance(
@@ -150,6 +160,12 @@ absl::StatusOr<std::unique_ptr<Device>> Driver::CreateDevice(
   queue_create_info.queueCount = 1;
   queue_create_info.pQueuePriorities = &queue_priority;
 
+  std::vector<const char *> device_extensions;
+#if defined(UVKC_PLATFORM_MACOS) && defined(VK_KHR_portability_subset)
+  // MoltenVK exposes portability subset as a required device extension.
+  device_extensions.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+#endif
+
   VkDeviceCreateInfo device_create_info = {};
   device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
   device_create_info.pNext = nullptr;
@@ -158,8 +174,10 @@ absl::StatusOr<std::unique_ptr<Device>> Driver::CreateDevice(
   device_create_info.pQueueCreateInfos = &queue_create_info;
   device_create_info.enabledLayerCount = 0;
   device_create_info.ppEnabledLayerNames = nullptr;
-  device_create_info.enabledExtensionCount = 0;
-  device_create_info.ppEnabledExtensionNames = nullptr;
+  device_create_info.enabledExtensionCount =
+      static_cast<uint32_t>(device_extensions.size());
+  device_create_info.ppEnabledExtensionNames =
+      device_extensions.empty() ? nullptr : device_extensions.data();
   device_create_info.pEnabledFeatures = nullptr;
 
   VkDevice device;
